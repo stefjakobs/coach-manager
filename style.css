@@ -1,0 +1,243 @@
+/*
+######
+# Copyright (c) 2013 Stefan Jakobs
+#
+# This file is part of coach-manager.
+#
+# coach-manager is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# coach-manager is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with coach-manager.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################
+# This was written by:
+#       Stefan Jakobs <projects@localside.net>
+#
+# Please send all comments, suggestion, bug reports, etc
+#       to projects@localside.net
+#
+#####################################################################
+*/
+
+table {
+   width: 100%;
+   border-collapse: collapse;
+/*   empty-cells: hide; */
+}
+td {
+   border: 1pt solid;
+   text-align: center;
+}
+.td_caption {
+   border: 1pt solid;
+   text-align: center;
+   font-weight: bold;
+}
+.td_caption_next {
+   border: 1pt solid;
+   text-align: center;
+   font-weight: bold;
+   background-color: #99cc99;
+   border-color: black;
+}
+.td_caption_separator {
+   border: 1pt solid;
+   text-align: center;
+   font-weight: bold;
+   border-top: double;
+}
+html, body {
+   padding-bottom:3em;
+   margin: auto;
+   /*padding: auto;*/
+   width: 90%;
+   background-color: lightyellow;
+}
+p {
+   color: blue;
+}
+.p_black {
+   color: black;
+}
+h2 {
+   color: purple;
+}
+h3 {
+   color: green;
+}
+
+.error {
+   color: red;
+}
+.notice {
+   color: red;
+}
+.attention {
+   font-weight: bold;
+}
+
+.td_content {
+   background-color: white;
+}
+.td_A_right {
+   background-color: yellow;
+   border-left: none;
+}
+.td_A_left {
+   background-color: yellow;
+   border-right: none;
+}
+.td_F_right {
+   background-color: lightblue;
+   border-left: none;
+}
+.td_F_left {
+   background-color: lightblue;
+   border-right: none;
+}
+.td_P_right {
+   background-color: blue;
+   border-left: none;
+}
+.td_P_left {
+   background-color: blue;
+   border-right: none;
+}
+.td_X_right {
+   background-color: lightgreen;
+   border-left: none;
+}
+.td_X_left {
+   background-color: lightgreen;
+   border-right: none;
+}
+.td__right {
+   background-color: white;
+   border-left: none;
+}
+.td__left {
+   background-color: white;
+   border-right: none;
+}
+.td_omitted_0 {
+   background-color: white;
+}
+.td_omitted_1 {
+   background-color: lightgrey;
+}
+.td_separator_0 {
+   background-color: white;
+   border-top: double;
+}
+.td_separator_1 {
+   background-color: lightgrey;
+   border-top: double;
+}
+
+.input_form {
+   display: inline-block;
+   float: left;
+   position: relative;
+   width: 350px;
+}
+.input_form_simple {
+   display: inline-block;
+   float: left;
+   position: relative;
+}
+.input_table {
+   display: inline-block;
+   float: none;
+   position: relative;
+   width: 50px;
+}
+.create_td {
+   border: none;
+   text-align: left;
+}
+.td_info {
+   border: none;
+   text-align: left;
+   font-size: 10pt;
+   color: silver;
+}
+
+
+.header_table {
+   border: 1pt solid black;
+   table-layout: fixed;
+   border-collapse: separate;
+   width: 100%;
+   margin-bottom: 0pt;
+}
+.header_table_low {
+   border: none;
+   table-layout: fixed;
+   width: 100%;
+   margin-bottom: 20pt;
+}
+.footer_table {
+   border: none;
+   width: 90%;
+   margin-top: 20pt;
+   position: fixed;
+   bottom: 0%;
+}
+.nav_table {
+   border: 1pt solid black;
+   table-layout: fixed;
+   border-collapse: separate;
+   width: 100%;
+   margin-bottom: 20pt;
+   margin-top: 20pt;
+   empty-cells: hide;
+}
+.header_td, .nav_td {
+   border: 1pt solid grey;
+   background-color: #ccFFFF;
+   text-align: center;
+   color: #3333cc;
+}
+.header_td_active {
+   background-color: #99cc99;
+   color: black;
+}
+.footer_td {
+   border: none;
+   background-color: transparent;
+   text-align: center;
+   color: grey;
+}
+.small_td_r {
+   border: none;
+   font-size: 8pt;
+   float: right;
+}
+.small_td_l {
+   border: none;
+   font-size: 8pt;
+   float: left;
+}
+
+/*
+a:link
+{
+#   background-color: yellow;
+}
+a:hover
+{
+#   background-color: green;
+}
+a:active
+{
+#   background-color: blue;
+}
+*/

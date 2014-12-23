@@ -1,0 +1,54 @@
+
+## database connection settings
+DATABASE => 'trainer',
+HOST     => 'localhost',
+USER     => 'root',
+PASSWD   => '',
+
+
+## global variables
+## Table names
+T_COACH   => 'coachlist',
+T_SCHED   => 'schedule',
+T_COURSE  => 'course',
+T_EVENT   => 'event',
+T_CONFIG  => 'config',
+
+## Script names with relative path to webservers docdir
+S_LIST_COURSE   => 'list_course.pl',
+S_LIST_COACH    => 'list_coach.pl',
+S_LIST_BILL     => 'list_bill.pl',
+S_CREATE_COURSE => 'create_course.pl',
+S_CREATE_COACH  => 'create_coach.pl',
+S_CREATE_REPORT => 'create_report.pl',
+S_CREATE_BILL   => 'create_bill.pl',
+S_EDIT_COURSE   => 'edit_course.pl',
+S_EDIT_COACH    => 'edit_coach.pl',
+S_MAIN          => 'trainer.pl',
+S_HELP          => 'help.pl',
+S_ADMIN         => 'admin.pl',
+
+## Variables
+V_COACHING      => ['A', 'P', 'F', 'X'],
+V_COACH_ITEMS   => { 'id'        => 'ID',
+                     'firstname' => 'Vorname',
+                     'lastname'  => 'Nachname',
+                     'birthday'  => 'Geburtstag',
+                     'license'   => 'Lizenz',
+                     'email'     => 'E-Mail',
+                     'telephone' => 'Telefon',
+                     'active'    => 'Aktiv',
+                   },
+V_COURSE_ITEMS  => { 'id'        => 'ID',
+                     'name'      => 'Kursname',
+                     'startdate' => 'Startdatum',
+                     'enddate'   => 'Enddatum',
+                     'starttime' => 'Startzeit',
+                     'endtime'   => 'Endzeit',
+                   },
+
+## set to 1 if tables should be created
+setup => 0,
+
+## enable debug output in HTML file
+debug => 0,

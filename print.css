@@ -1,0 +1,122 @@
+/*
+######
+# Copyright (c) 2013 Stefan Jakobs
+#
+# This file is part of coach-manager.
+#
+# coach-manager is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# coach-manager is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with coach-manager.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################
+# This was written by:
+#       Stefan Jakobs <projects@localside.net>
+#
+# Please send all comments, suggestion, bug reports, etc
+#       to projects@localside.net
+#
+#####################################################################
+*/
+
+@page {
+   margin: 20mm 20mm 20mm 25mm;
+}
+table {
+   width: 100%;
+   border-collapse: collapse;
+   empty-cells: hide;
+   border: none;
+   font-size: 12px;
+}
+td,th {
+   border: 1pt solid black;
+}
+.names_table {
+   border: none;
+   table-layout: fixed;
+   border-collapse: separate;
+   width: 100%;
+   margin-bottom: 5pt;
+   margin-top: 5pt;
+   empty-cells: hide;
+}
+.names_name_th {
+   width: 15%;
+   text-align: left;
+}
+.names_name_td {
+   width: 15%;
+}
+.course_table{
+   border: 1pt solid black;
+   width: 100%;
+}
+.course_th {
+   width: 20%;
+   text-align: left;
+}
+.course_td_20 {
+   width: 20%;
+}
+.course_td_50 {
+   width: 20%;
+}
+.timing_table {
+   border: none;
+   width: 40%;
+   margin-top: 5pt;
+}
+.timing_th {
+   text-align: left;
+}
+.timing_td {
+   text-align: center;
+}
+.schedule_table {
+   border: 1pt solid black;
+   width: 100%;
+   margin-top: 10pt;
+}
+.schedule_th {
+   text-align: center;
+}
+.schedule_td {
+   text-align: center;
+}
+.banking_table {
+   border: 1pt solid black;
+   width: 100%;
+}
+.banking_th {
+   text-align: right;
+}
+.banking_td {
+   text-align: left;
+}
+.sum_td {
+   text-align: center;
+}
+.signing_table {
+   margin-top: 50pt;
+   border: none;
+   text-align: right;
+   width: 50%;
+}
+.signing_td {
+   border: none;
+   text-align: center;
+}
+
+.error {
+   color: red;
+}
+
