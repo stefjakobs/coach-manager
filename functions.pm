@@ -33,7 +33,7 @@ use Exporter;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use CGI ':standard';
 
-$VERSION = '0.3';
+$VERSION = '0.4';
 @ISA     = qw(Exporter);
 @EXPORT  = qw( init_db close_db read_config
                get_table_list get_courses get_schedule get_state get_participants
@@ -233,17 +233,24 @@ sub get_event_state($$$$) {
    return %event_list;
 }
 
-### get a list of all coaches
-### Requires: database handle, coach table name
+### get a list of coaches; active or all
+### Requires: database handle, coach table name, selector (all or only active)
 ### Returns: a hash with the ids as keys and the firstname lastname as values
-sub get_coach_list($$) {
+sub get_coach_list {
    my $dbh = shift;
    my $t_coach = shift;
+   my $selector = shift;
+
+   if (defined($selector) and $selector eq 'all') {
+      $selector = '';
+   } else {
+      $selector = 'WHERE active = true';
+   }
 
    # create a array of coaches
    my %coaches;
    my $sth = $dbh->prepare("SELECT id, firstname, lastname FROM $t_coach 
-                            WHERE active = true ORDER BY id");
+                            $selector ORDER BY id");
    $sth->execute();
    while (my $ref = $sth->fetchrow_hashref()) {
       $coaches{$ref->{'id'}} = "$ref->{'firstname'} $ref->{'lastname'}";
@@ -434,7 +441,7 @@ sub print_link_list($) {
    print '<table class="header_table_low">' ."\n";
    print '   <tr>' ."\n";
    print "         <td class=\"small_td_l\"><a href=\"$config{'S_HELP'}\">Hilfe</a>" ."\n";
-   print "         <td class=\"small_td_r\"><a href=\"$config{'S_ADMIN'}\">Admin</a>" ."\n";
+   print "         <td class=\"small_td_r\"><a href=\"$config{'S_TRENDING'}\">Trending</a> <a href=\"$config{'S_ADMIN'}\">Admin</a>" ."\n";
    print '   </tr>' ."\n";
    print '</table>' ."\n";
 }

@@ -27,6 +27,7 @@ S_EDIT_COACH    => 'edit_coach.pl',
 S_MAIN          => 'trainer.pl',
 S_HELP          => 'help.pl',
 S_ADMIN         => 'admin.pl',
+S_TRENDING      => 'trending.pl',
 
 ## Variables
 V_COACHING      => ['A', 'P', 'F', 'X'],

@@ -145,13 +145,21 @@ EOF
    print "         <th>Link zur Abrechnung</th>\n";
    print "      </tr>\n";
    foreach my $coach_id (keys %coach_list) {
-      print "      <tr>\n";
-      print "         <td>$coach_list{$coach_id}</td>\n";
+      my $skip_output = 1;
+      my $output = "      <tr>\n";
+      $output .= "         <td>$coach_list{$coach_id}</td>\n";
       foreach (@{$config{'V_COACHING'}}) {
-         print "         <td class=\"td_content\">" .get_coaching_sum($coach_id, $course_id, $_, $start_date, $end_date) ."</td>\n";
+         my $coaching_sum = get_coaching_sum($coach_id, $course_id, $_, $start_date, $end_date);
+         if ($coaching_sum > 0) {
+            $skip_output = 0;
+         }
+         $output .= "         <td class=\"td_content\">" .$coaching_sum ."</td>\n";
       }
-      print "         <td><a href=\"$config{'S_CREATE_BILL'}?coach_id=$coach_id&course_id=$course_id\">Zur Abrechnung</a></td>\n";
-      print "      </tr>\n";
+      $output .= "         <td><a href=\"$config{'S_CREATE_BILL'}?coach_id=$coach_id&course_id=$course_id\">Zur Abrechnung</a></td>\n";
+      $output .= "      </tr>\n";
+      if ($skip_output == 0) {
+         print "$output";
+      }
    }
 
    print "   </table>\n";
@@ -190,7 +198,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    print_link_list($config{'S_CREATE_REPORT'});
 
    ## get a list of all coaches
-   %coach_list = get_coach_list($dbh, $config{'T_COACH'});
+   %coach_list = get_coach_list($dbh, $config{'T_COACH'}, 'all');
 
    print "<p>course: $course_id<br>start: $start_date<br>ende: $end_date</p>\n";
    print_report();
