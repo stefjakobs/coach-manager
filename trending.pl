@@ -48,7 +48,10 @@ my $dbh = init_db(\%config);
 
 ## Subroutines
 
-sub print_formular() {
+## require: string ('get' or 'post')
+##     check all boxes if string == 'get'
+sub print_formular($) {
+   my $get = shift;
    print <<"EOF"; 
    <h3> Trending </h3>
    <div id="control">
@@ -56,6 +59,7 @@ sub print_formular() {
 EOF
 
    foreach (sort {$course_list{$a} cmp $course_list{$b}} keys %course_list) {
+      if ($get eq 'get') { $courses_checked{$_}='checked'; }
       if (defined($courses_checked{$_})) {
          print "         <input type=\"checkbox\" name=\"course_id\" value=\"$_\" $courses_checked{$_} > $course_list{$_} </br>\n";
       } else {
@@ -93,8 +97,10 @@ sub untaint_input() {
       foreach ($cgi->param('course_id')) {
          $courses_checked{$_}='checked';
       }
-   } else {
+   } elsif ( defined($cgi->param('course_id')) ) {
       $error .= "Kurs-ID darf nur aus Zahlen bestehen!<br>";
+   } else {
+      $error .= "Bitte eine Auswahl treffen!<br>";
    }
 }
 
@@ -111,7 +117,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    print_start_html($cgi, "Trending");
    print_link_list($config{'S_TRENDING'});
 
-   print_formular();
+   print_formular('post');
    if (defined($error)) {
       print "<p class=\"error\">$error</p>";
    }
@@ -119,7 +125,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    $cgi->header('multipart/form-data');
    print_start_html($cgi, 'Trending');
    print_link_list($config{'S_TRENDING'});
-   print_formular();
+   print_formular('get');
 }
 print_end_html($cgi);
 
