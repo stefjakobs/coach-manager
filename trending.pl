@@ -50,7 +50,7 @@ my $dbh = init_db(\%config);
 sub print_formular() {
    print <<"EOF"; 
    <h3> Trending </h3>
-   <div id="edit-form">
+   <div id="control">
       <form action="$config{'S_TRENDING'}" name="trending" method="post" class="input_form">
 EOF
 
@@ -65,12 +65,14 @@ EOF
    print <<"EOF";
          <input class="button" type="submit" name="submit" value="Grafik neu aufbauen">
       </form>
+   </div>
+   <div id="image">
 EOF
 
    if (@course_ids) {
       print "       <img src=\"generate_image.pl?course_id=" . join('&course_id=', @course_ids) ."\" />";
    } else {
-      print "       <img src=\"generate_image.pl\" />";
+      print "       <img src=\"generate_image.pl\" />\n";
    }
    print <<"EOF";
    </div>
