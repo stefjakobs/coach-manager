@@ -36,6 +36,7 @@ use functions;
 
 ## global variables
 my $error;
+my $debug;
 my $sth;
 my $cgi = CGI->new;
 
@@ -66,7 +67,7 @@ sub generate_image() {
       $query = "SELECT id,name from $config{'T_COURSE'}";
    }
    my $sth = $dbh->prepare($query);
-   if ($config{'debug'}) { print_debug("query: $query"); }
+   if ($config{'debug'}) { $debug .= "query: $query<br>\n"; }
    $sth->execute();
    while (my $ref = $sth->fetchrow_hashref()) {
       if (defined($ref->{'id'})) { push(@course_ids, $ref->{'id'}); };
@@ -78,9 +79,9 @@ sub generate_image() {
    push(@data, \@dates);
    foreach my $id (@course_ids) {
       my @participants;
-      $query = "SELECT date,participants from $config{'T_EVENT'} where course_id = $id";
+      $query = "SELECT date,participants from $config{'T_EVENT'} where course_id = $id ORDER BY date";
       $sth = $dbh->prepare($query);
-      if ($config{'debug'}) { print_debug("query: $query"); }
+      if ($config{'debug'}) { $debug .= "query: $query<br>\n"; }
       $sth->execute();
 
       my $i = 1;
@@ -88,7 +89,11 @@ sub generate_image() {
          push(@dates, $i) unless $i < scalar(@dates);
          if ( defined($ref->{'participants'}) ) {
             push(@participants, $ref->{'participants'});
-         } else { push(@participants, '0'); }
+            if ($config{'debug'}) { $debug .= "result: $i: $ref->{'participants'}<br>\n"; }
+         } else {
+            push(@participants, undef);
+            if ($config{'debug'}) { $debug .= "result: $i: undef<br>\n"; }
+         }
          $i++;
       }
       $sth->finish();
@@ -106,6 +111,7 @@ sub generate_image() {
       transparent      => '0',
       line_width       => '3',
       legend_placement => 'RC',
+      skip_undef       => '0',
 
    ) or warn $mygraph->error;
    $mygraph->set_legend(@course_names);
@@ -115,8 +121,13 @@ sub generate_image() {
 
    my $myimage = $mygraph->plot(\@data) or die $mygraph->error;
 
-   print "Content-type: image/png\n\n";
-   print $myimage->png;
+   if ($config{'debug'}) {
+       print "Content-type: text/html\n\n";
+       print_debug($debug);
+    } else {
+       print "Content-type: image/png\n\n";
+       print $myimage->png;
+    }
 }
 
 untaint_input();

@@ -35,6 +35,7 @@ use functions;
 
 ## global variables
 my $error;
+my $object;
 my @course_ids;
 my %course_list;
 my %courses_checked;
@@ -69,10 +70,15 @@ EOF
    <div id="image">
 EOF
 
-   if (@course_ids) {
-      print "       <img src=\"generate_image.pl?course_id=" . join('&course_id=', @course_ids) ."\" />";
+   if ($config{'debug'}) {
+      $object = '<object width="800px" height="400px" data=';
    } else {
-      print "       <img src=\"generate_image.pl\" />\n";
+      $object = '<img src=';
+   }
+   if (@course_ids) {
+      print "       ${object}\"generate_image.pl?course_id=" . join('&course_id=', @course_ids) ."\" />";
+   } else {
+      print "       ${object}\"generate_image.pl\" />\n";
    }
    print <<"EOF";
    </div>
