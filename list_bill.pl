@@ -70,6 +70,7 @@ sub print_formular($$$$$$$$$) {
    my $iban = shift;
    my $course_term = 'x';
    my $course_name = 'x';
+   my $course_number = '0';
    my $course_start = 'x';
    my $course_end = 'x';
    my $sum = '0';
@@ -89,9 +90,10 @@ sub print_formular($$$$$$$$$) {
    eval { $sth->execute(); };
    $error .= "SELECT failed: $@<br>\n" if $@;
    my $ref = $sth->fetchrow_hashref();
-   $course_name  = $ref->{'name'};
-   $course_start = $ref->{'starttime'};
-   $course_end   = $ref->{'endtime'};
+   $course_name   = $ref->{'name'};
+   $course_number = $ref->{'number'};
+   $course_start  = $ref->{'starttime'};
+   $course_end    = $ref->{'endtime'};
    # set course term to: WS|SS YEAR
    my ($y,$m,$d) = split /-/, $ref->{'startdate'};
    if ($m >= 4 and $m < 10) {
@@ -164,7 +166,11 @@ sub print_formular($$$$$$$$$) {
 EOF
    foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
        print "         <td class=\"schedule_td\">$event_list{$event_id}</td>" ."\n";
-       print "         <td class=\"schedule_td\">$course_name</td>\n";
+       if ($course_number == 0) {
+           print "         <td class=\"schedule_td\">$course_name</td>\n";
+       } else {
+           print "         <td class=\"schedule_td\">$course_number</td>\n";
+       }
        print "         <td class=\"schedule_td\">$course_start</td>\n";
        print "         <td class=\"schedule_td\">$course_end</td>\n";
        print "         <td class=\"schedule_td\">$course_diff</td>\n";

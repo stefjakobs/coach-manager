@@ -38,6 +38,7 @@ use functions;
 my $error;
 my $sth;
 my ($course_name, $start_date, $end_date, $start_time, $end_time, $id) = ( '', '', '', '', '', '');
+my $course_number = '';
 my $cgi = CGI->new;
 
 my %config = read_config();
@@ -53,6 +54,9 @@ sub print_formular() {
       <tr>
          <td class="create_td">Kursname:</td>
          <td class="create_td"><input class="input_form" type="text" name="course_name" value="$course_name"></td>
+      </tr><tr>
+         <td class="create_td">Kursnummer:</td>
+         <td class="create_td"><input class="input_form" type="text" name="course_number" value="$course_number"></td>
       </tr><tr>
          <td class="create_td">Startdatum:</td>
          <td class="create_td"><input class="input_form" type="text" name="start_date" value="$start_date"></td>
@@ -81,6 +85,11 @@ sub untaint_input() {
       $course_name = $cgi->param('course_name');
    } else {
       $error .= "Kursname darf nur aus Buchstaben und Zahlen bestehen!<br>";
+   }
+   if ( defined($cgi->param('course_number')) and $cgi->param('course_number') =~ /^\d{1,10}$/) {
+      $course_number = $cgi->param('course_number');
+   } else {
+      $error .= "Kursnummer muss eine Zahl sein!<br>";
    }
    if ( defined($cgi->param('start_date')) and $cgi->param('start_date') =~ /^\d{4}-\d{2}-\d{2}$/) {
       $start_date = $cgi->param('start_date');
@@ -121,8 +130,8 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    untaint_input();
 
    if (! defined($error)) {
-      eval { $dbh->do( "INSERT INTO $config{'T_COURSE'} ( name, startdate, enddate, starttime, endtime )
-                        VALUES (\"$course_name\", \"$start_date\", \"$end_date\", \"$start_time\", \"$end_time\")" )
+      eval { $dbh->do( "INSERT INTO $config{'T_COURSE'} ( name, number, startdate, enddate, starttime, endtime )
+                        VALUES (\"$course_name\", \"$course_number\", \"$start_date\", \"$end_date\", \"$start_time\", \"$end_time\")" )
       };
       if ($@) {
          $error .= "Insert failed: $@\n";

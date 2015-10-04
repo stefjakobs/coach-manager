@@ -48,8 +48,6 @@ my $dbh = init_db(\%config);
 
 ## Subroutines
 
-## require: string ('get' or 'post')
-##     check all boxes if string == 'get'
 sub print_formular($) {
    my $get = shift;
    print <<"EOF"; 

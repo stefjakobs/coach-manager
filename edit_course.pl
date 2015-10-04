@@ -36,7 +36,7 @@ use functions;
 
 my $error;
 my $sth;
-my ($course_name, $start_date, $end_date, $start_time, $end_time, $id);
+my ($course_name, $course_number, $start_date, $end_date, $start_time, $end_time, $id);
 my $cgi = CGI->new;
 
 my %config = read_config();
@@ -49,11 +49,14 @@ sub print_formular() {
    <p>F&uuml;lle das Formular aus und best&auml;tige die &Auml;nderungen mit dem Button</p>
    <div id="edit-form">
    <form action="$config{'S_EDIT_COURSE'}" name="edit_course" method="post">
-	<input type="hidden" name="id" value="$id"></td>
+   <input type="hidden" name="id" value="$id"></td>
    <table>
       <tr>
          <td class="create_td">Kursname:</td>
          <td class="create_td"><input class="input_form" type="text" name="course_name" value="$course_name"></td>
+      </tr><tr>
+         <td class="create_td">Kursnummer:</td>
+         <td class="create_td"><input class="input_form" type="text" name="course_number" value="$course_number"></td>
       </tr><tr>
          <td class="create_td">Startdatum:</td>
          <td class="td_info">$start_date: Dies kann nicht nachtr&auml;glich ver&auml;ndert werden!!
@@ -84,6 +87,11 @@ sub untaint_input() {
       $course_name = $cgi->param('course_name');
    } else {
       $error .= "Kursname darf nur aus Zahlen und Buchstaben bestehen!<br>";
+   }
+   if ( defined($cgi->param('course_number')) and $cgi->param('course_number') =~ /^\d{1,10}$/ ) {
+      $course_number = $cgi->param('course_number');
+   } else {
+      $error .= "Kursnummer muss eine Zahl sein!<br>";
    }
    if ( defined($cgi->param('start_date')) and $cgi->param('start_date') =~ /^\d{4}-\d{2}-\d{2}$/) {
       $start_date = $cgi->param('start_date');
@@ -135,8 +143,9 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
 
    ## Update Course
    if (! defined($error)) {
-      eval { $dbh->do("UPDATE $config{'T_COURSE'} SET name=\"$course_name\", 
-		                 enddate=\"$end_date\",  starttime=\"$start_time\", endtime=\"$end_time\"
+      eval { $dbh->do("UPDATE $config{'T_COURSE'} SET name=\"$course_name\",
+                       number=\"$course_number\",
+                       enddate=\"$end_date\",  starttime=\"$start_time\", endtime=\"$end_time\"
                        WHERE id = $id " )
       };
       $error .= "Alter failed: $@\n" if $@;
@@ -201,12 +210,13 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
       } else {
          $sth->execute();
          my $ref = $sth->fetchrow_hashref(); 
-         $course_name = $ref->{'name'};
-         $start_date  = $ref->{'startdate'};
-         $end_date    = $ref->{'enddate'};
-         $start_time  = $ref->{'starttime'};
-         $end_time    = $ref->{'endtime'};
-	      $id          = $cgi->param('id');
+         $course_name   = $ref->{'name'};
+         $course_number = $ref->{'number'};
+         $start_date    = $ref->{'startdate'};
+         $end_date      = $ref->{'enddate'};
+         $start_time    = $ref->{'starttime'};
+         $end_time      = $ref->{'endtime'};
+         $id            = $cgi->param('id');
          $sth->finish();
       }
       print_start_html($cgi, 'Kurs bearbeiten');

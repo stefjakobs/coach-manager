@@ -38,7 +38,7 @@ $VERSION = '0.4';
 @EXPORT  = qw( init_db close_db read_config
                get_table_list get_courses get_schedule get_state get_participants
                get_coach_list get_event_list get_event_state get_course_list 
-               get_coach_name
+               get_coach_name get_course_duration
                print_start_html print_end_html print_link_list
                print_formular_edit_coach
                print_debug
@@ -46,7 +46,7 @@ $VERSION = '0.4';
 @EXPORT_OK = qw(init_db close_db read_config
                 get_table_list get_courses get_schedule get_state get_participants
                 get_coach_list get_event_list get_event_state get_course_list
-                get_coach_name
+                get_coach_name get_course_duration
                 print_start_html print_end_html print_link_list
                 print_formular_edit_coach
                 print_debug
@@ -104,6 +104,7 @@ sub init_db($) {
       $dbh->do("CREATE TABLE IF NOT EXISTS 
                    $config{'T_COURSE'} (id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
                                         name      VARCHAR(64) NOT NULL UNIQUE KEY,
+                                        number    INT NOT NULL DEFAULT 0,
                                         startdate DATE NOT NULL,
                                         enddate   DATE NOT NULL,
                                         starttime TIME NOT NULL,
@@ -274,6 +275,25 @@ sub get_course_list($$) {
    return %courses;
 }
 
+### get the duration of the named course
+### Requires: database handle, course table name, course id
+### Returns: course duration in hours
+sub get_course_duration($$$) {
+   my $dbh = shift;
+   my $t_course = shift;
+   my $course_id = shift;
+
+   my $duration = 0;
+   my $sth = $dbh->prepare("SELECT TIME_TO_SEC(SUBTIME(endtime, starttime))/3600 
+                            AS duration FROM $t_course WHERE id = $course_id
+                           ");
+   $sth->execute();
+   while (my $ref = $sth->fetchrow_hashref()) {
+      $duration = "$ref->{'duration'}";
+   }
+   return $duration;
+}
+
 ### get the first and last name of a coach
 ### Requires: database handle, coach table name, coach id
 ### Returns: Array with the firstname in element 0; lastname in element 1
@@ -297,7 +317,7 @@ sub get_coach_name($$$) {
    return %coach;
 }
 
-### get the schedule state of a coache on a specific date
+### get the schedule state of a coach on a specific date
 ### Requires: database handle, schedule table name, event table name
 ###   coach id, date
 ### Returns: the schedule state

@@ -30,7 +30,8 @@ S_ADMIN         => 'admin.pl',
 S_TRENDING      => 'trending.pl',
 
 ## Variables
-V_COACHING      => ['A', 'P', 'F', 'X'],
+V_PAYED_COACHES => '3',
+V_COACHING      => ['A', 'P', 'F', 'V', 'X'],
 V_COACH_ITEMS   => { 'id'        => 'ID',
                      'firstname' => 'Vorname',
                      'lastname'  => 'Nachname',
@@ -46,6 +47,20 @@ V_COURSE_ITEMS  => { 'id'        => 'ID',
                      'enddate'   => 'Enddatum',
                      'starttime' => 'Startzeit',
                      'endtime'   => 'Endzeit',
+                   },
+# How much money (as factor) will a coach receive if he has act as that coach
+V_BILL_FACTOR => { 'A' => 1.15,
+                   'P' => 0.7,
+                   'F' => 0,
+                   'V' => 0,
+                   'X' => 0,
+                 },
+# Which coach types are defined (key)
+# and how much money will they receive (value)
+V_COACH_TYPES   => { 'A' => '16',
+                     'B' => '16',
+                     'C' => '16',
+                     'D' => '10',
                    },
 
 ## set to 1 if tables should be created
