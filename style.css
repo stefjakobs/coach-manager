@@ -111,6 +111,18 @@ h3 {
    background-color: blue;
    border-right: none;
 }
+.td_V_right {
+   background-color: navy;
+   color: orange;
+   font-weight: bold;
+   border-left: none;
+}
+.td_V_left {
+   background-color: navy;
+   color: orange;
+   font-weight: bold;
+   border-right: none;
+}
 .td_X_right {
    background-color: lightgreen;
    border-left: none;
