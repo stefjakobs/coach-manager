@@ -28,6 +28,7 @@
 #####################################################################
 
 use strict;
+no warnings 'deprecated';
 use DBI;
 use CGI ':standard';
 use GD::Graph::lines;

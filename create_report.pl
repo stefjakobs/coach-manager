@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2013 Stefan Jakobs
+# Copyright (c) 2013-2015 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -28,6 +28,7 @@
 #####################################################################
 
 use strict;
+no warnings 'deprecated';
 use DBI;
 use CGI;
 use lib '.';
@@ -238,7 +239,7 @@ EOF
    }
    print "         <th>Link zur Abrechnung</th>\n";
    print "      </tr>\n";
-   foreach my $coach_id (keys %coach_list) {
+   foreach my $coach_id (sort{$coach_list{$a} cmp $coach_list{$b}} keys %coach_list) {
       my $skip_output = 1;
       my $output = "      <tr>\n";
       $output .= "         <td>$coach_list{$coach_id}</td>\n";
@@ -263,15 +264,30 @@ EOF
    print "   </table>\n";
 }
 
+# Abrechnung:
+# Voraussetzung: 3 Trainerstellen = 2*A + 1*P
+# A soll besser bewertet sein als P: 3 = 2*1,15*A + 1*0,7*P
+# Damit die Gewichtung nicht vom tatsächlichen Verhältnis der geleisteten
+# Stunden abhängt, muss sich die Gewichtung am Ende herauskürzen:
+#   Gewichteter Stundenlohn = h_lohn = Ges_Summe/(1,15*A_ges + 0,7*P_ges)
+# Bezahlung eines Trainers x:
+#   Bezahlung_x = h_lohn * 1,15 * A_x + h_lohn * 0,7 * P_x
+# Bezahlung aller Trainer:
+#   Bezahlung = h_lohn * Summe(1,15*A_i + 0,7*P_i)
+#                       [i=1..x]
+#             = Ges_Summe/(1,15*A_ges + 0,7*P_ges) * (1,15*Summe(A_i) + 0,7*Summe(P_i))
+#             = Ges_Summe/(1,15*A_ges + 0,7*P_ges) * (1,15*A_ges + 0,7*P_ges)
+#             = Ges_Summe
+#
 sub print_accounting() {
-   my $sum_coaching_hours = 0;  # hours worked in this time slot.
+   my %sum_coaching_hours;  # hours worked per coaching in this time slot.
    my $sum_payment = 0;
    my $pay_per_hour = 0;
    my %coach_working_hours;
 
    ## calculate overall working hours.
    ## calculate working hours per coach per coaching (A, P, ..)
-   foreach my $coach_id (keys %coach_list) {
+   foreach my $coach_id (sort{$coach_list{$a} cmp $coach_list{$b}} keys %coach_list) {
       foreach (@{$config{'V_COACHING'}}) {
          # calculate hours only for coaching time which will be payed for
          if ( $config{'V_BILL_FACTOR'}{$_} > 0 ) {
@@ -282,7 +298,7 @@ sub print_accounting() {
                my $events_per_course = get_coaching_sum($coach_id, $course_id, $_, $start_date, $end_date);
                $coaching_sum = $coaching_sum + $events_per_course * $course_duration;
             }
-            $sum_coaching_hours = $sum_coaching_hours + $coaching_sum;
+            $sum_coaching_hours{$_} = $sum_coaching_hours{$_} + $coaching_sum;
             $coach_working_hours{$coach_id}{$_} = $coaching_sum;
          }
       }
@@ -300,20 +316,27 @@ sub print_accounting() {
    for (my $i=0; $i<$config{'V_PAYED_COACHES'}; $i++) {
       my $payed_hours = get_payed_hours($course_ids[$i], $start_date, $end_date);
       print "      <tr>\n";
-      print "        <td>$course_ids[$i]</td>\n";
-      print "        <td>$payed_hours</td>\n";
-      print "        <td>$config{'V_COACH_TYPES'}{$coach_types[$i]}</td>\n";
-      print "        <td>" .($payed_hours * $config{'V_COACH_TYPES'}{$coach_types[$i]}) ."</td>\n";
+      print "        <td class=\"td_content\">$course_ids[$i]</td>\n";
+      print "        <td class=\"td_content\">$payed_hours</td>\n";
+      print "        <td class=\"td_content\">$config{'V_COACH_TYPES'}{$coach_types[$i]}</td>\n";
+      printf "        <td class=\"td_content\">%.2f EUR</td>\n", ($payed_hours * $config{'V_COACH_TYPES'}{$coach_types[$i]});
       print "      </tr>\n";
-      $sum_payment = $sum_payment + $payed_hours * $config{'V_COACH_TYPES'}{$coach_types[$i]};
+      $sum_payment += $payed_hours * $config{'V_COACH_TYPES'}{$coach_types[$i]};
    }
-   print "      <tr><td colspan=3></td><td><b>$sum_payment</b></td></tr>\n";
+   printf "      <tr><td colspan=3></td><td class=\"td_content\"><b>%.2f EUR</b></td></tr>\n", $sum_payment;
    print "</table>\n";
 
    ## calculate average payment per hour.
-   $pay_per_hour = $sum_payment/$sum_coaching_hours;
-   printf "<p>Summe geleistete Stunden: <b>%f Std</b></p>\n", $sum_coaching_hours;
-   printf "<p>Geld pro Stunde: <b>%.2f EUR/Std</b></p>", $pay_per_hour;
+   my $weighted_sum_coaching_hours = 0;
+   my $straight_sum_coaching_hours = 0;
+   foreach (keys %sum_coaching_hours) {
+      $weighted_sum_coaching_hours += $config{'V_BILL_FACTOR'}{$_} * $sum_coaching_hours{$_};
+      $straight_sum_coaching_hours += $sum_coaching_hours{$_};
+   }
+   $pay_per_hour = $sum_payment/$weighted_sum_coaching_hours;
+   printf "<p>Summe geleisteter Stunden: <b>%.1f Std</b></p>\n", $straight_sum_coaching_hours;
+   printf "<p>Summe geleisteter Stunden (gewichtet): <b>%.1f Std</b></p>\n", $weighted_sum_coaching_hours;
+   printf "<p>Geld pro Stunde (gewichtet): <b>%.2f EUR/Std</b></p>", $pay_per_hour;
 
    print '   <table class="report_table">' ."\n";
    print '      <tr><th>Trainer</th>' ."\n";
@@ -322,12 +345,12 @@ sub print_accounting() {
    foreach (@{$config{'V_COACHING'}}) {
       if ( $config{'V_BILL_FACTOR'}{$_} > 0 ) {
          print "         <th>$_</th>\n";
-         print "         <th>$_ * Faktor</th>\n";
+         print "         <th>$_ * $config{'V_BILL_FACTOR'}{$_}</th>\n";
       }
    }
    print "         <th>Geld</th>\n";
    print "      </tr>\n";
-   foreach my $coach_id (keys %coach_list) {
+   foreach my $coach_id (sort{$coach_list{$a} cmp $coach_list{$b}} keys %coach_list) {
       my $payment = 0;
       my $skip_output = 1;
       my $output = "      <tr>\n";
@@ -340,7 +363,7 @@ sub print_accounting() {
             }
             $output .= "         <td class=\"td_content\">" .$coach_working_hours{$coach_id}{$_} ."</td>\n";
             $output .= "         <td class=\"td_content\">" .$coach_working_hours{$coach_id}{$_} * $config{'V_BILL_FACTOR'}{$_} ."</td>\n";
-            $payment = $payment + $coach_working_hours{$coach_id}{$_} * $config{'V_BILL_FACTOR'}{$_} * $sum_payment/$sum_coaching_hours;
+            $payment += $coach_working_hours{$coach_id}{$_} * $config{'V_BILL_FACTOR'}{$_} * $pay_per_hour;
          }
       }
       $output .= sprintf("         <td class=\"td_content\">%.2f</td>\n", $payment);
@@ -407,13 +430,18 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    %coach_list = get_coach_list($dbh, $config{'T_COACH'}, 'all');
 
    if ($submit_type eq 'report') {
-      print "<p>course: $course_id<br>start: $start_date<br>ende: $end_date</p>\n";
+      if ($config{'debug'}) {
+         print "<p>course: $course_id<br>start: $start_date<br>ende: $end_date</p>\n";
+      }
       print_report();
    } elsif ($submit_type eq 'accounting') {
-      foreach (@course_ids) {
-         print "<p>course: $_<br>\n";
+      if ($config{'debug'}) {
+         print "<p>\n";
+         foreach (@course_ids) {
+            print "course: $_<br>\n";
+         }
+         print "start: $start_date<br>ende: $end_date</p>\n";
       }
-      print "start: $start_date<br>ende: $end_date</p>\n";
       print_accounting();
    } else {
       print "<p class=\"error\">Unknown submit type!</p>\n";

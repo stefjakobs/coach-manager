@@ -32,8 +32,9 @@ use warnings;
 use Exporter;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use CGI ':standard';
+no warnings 'deprecated';
 
-$VERSION = '0.4';
+$VERSION = '0.5';
 @ISA     = qw(Exporter);
 @EXPORT  = qw( init_db close_db read_config
                get_table_list get_courses get_schedule get_state get_participants
