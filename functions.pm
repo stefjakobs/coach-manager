@@ -34,12 +34,12 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use CGI ':standard';
 no warnings 'deprecated';
 
-$VERSION = '0.5';
+$VERSION = '0.4';
 @ISA     = qw(Exporter);
 @EXPORT  = qw( init_db close_db read_config
                get_table_list get_courses get_schedule get_state get_participants
                get_coach_list get_event_list get_event_state get_course_list 
-               get_coach_name get_course_duration
+               get_coach_name get_course_duration get_event_time_list
                print_start_html print_end_html print_link_list
                print_formular_edit_coach
                print_debug
@@ -47,7 +47,7 @@ $VERSION = '0.5';
 @EXPORT_OK = qw(init_db close_db read_config
                 get_table_list get_courses get_schedule get_state get_participants
                 get_coach_list get_event_list get_event_state get_course_list
-                get_coach_name get_course_duration
+                get_coach_name get_course_duration get_event_time_list
                 print_start_html print_end_html print_link_list
                 print_formular_edit_coach
                 print_debug
@@ -214,6 +214,43 @@ sub get_event_list($$$$) {
    return %event_list;
 }
 
+### get a list of all events or the events in a specific month
+### Requires the database handle, the event table name, the course
+### table name and optionally the month and year (this might be emtpy)
+### Returns a hash with the ids as keys and the hour:minute as values
+sub get_event_time_list($$$$$) {
+   # get only events in a specific month and year or
+   # get all events
+   my $dbh = shift;
+   my $t_event = shift;
+   my $t_course = shift;
+   my $cur_month = shift;
+   my $cur_year  = shift;
+
+   my $sth;
+   my %event_time_list;
+   if (! $cur_month or ! $cur_year) {
+      $sth = $dbh->prepare("SELECT event.id AS id,
+                            TIME_FORMAT(${t_course}.starttime, '%k:%i') AS time FROM $t_event
+                            join $t_course on ${t_event}.course_id = ${t_course}.id
+                          
+      ");
+   } else {
+      $sth = $dbh->prepare("SELECT event.id AS id,
+                            TIME_FORMAT(${t_course}.starttime, '%k:%i') AS time FROM $t_event
+                            join $t_course on ${t_event}.course_id = ${t_course}.id
+                            WHERE MONTH(date) = $cur_month AND YEAR(date) = $cur_year
+                          ");
+   }
+   $sth->execute();
+   while (my $ref = $sth->fetchrow_hashref()) {
+      $event_time_list{"$ref->{'id'}"} = $ref->{'time'};
+   }
+   $sth->finish();
+   return %event_time_list;
+}
+
+
 ### get the state (obmitted or not) of the events in a specific month
 ### Requires: the database handle, event table name, month, year
 ### Returns: hash with the ids as keys and omitted state as values
@@ -318,21 +355,20 @@ sub get_coach_name($$$) {
    return %coach;
 }
 
-### get the schedule state of a coach on a specific date
+### get the schedule state of a coach at a specific event
 ### Requires: database handle, schedule table name, event table name
-###   coach id, date
+###   coach id, event_id
 ### Returns: the schedule state
 sub get_schedule($$$$$) {
    my $dbh = shift;
    my $t_sched = shift;
    my $t_event = shift;
    my $coach_id = shift;
-   my $date = shift;
+   my $event_id = shift;
    
    my $schedule;
    my $sth = $dbh->prepare("SELECT coaching FROM $t_sched
-                            JOIN $t_event ON ${t_sched}.event_id = ${t_event}.id
-                            WHERE coach_id = \"$coach_id\" AND date = \"$date\"
+                            WHERE coach_id = \"$coach_id\" AND event_id = \"$event_id\"
                            ");
    
    $sth->execute();

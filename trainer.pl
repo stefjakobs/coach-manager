@@ -59,8 +59,9 @@ sub print_formular($$) {
    my $cur_month = shift;
    my $cur_year = shift;
 
-   my %event_list = get_event_list($dbh, $config{'T_EVENT'}, $cur_month, $cur_year);
-   my %coach_list = get_coach_list($dbh, $config{'T_COACH'});
+   my %event_list      = get_event_list($dbh, $config{'T_EVENT'}, $cur_month, $cur_year);
+   my %event_time_list = get_event_time_list($dbh, $config{'T_EVENT'}, $config{'T_COURSE'}, $cur_month, $cur_year);
+   my %coach_list      = get_coach_list($dbh, $config{'T_COACH'});
 
    ## table width: 2*events + 1 column of names
    my $colspan = 2*keys(%event_list) + 2;
@@ -84,7 +85,19 @@ EOF
          $marked = 1;
       } else {
          print "      <td class=\"td_caption\" colspan=\"2\"> " .substr($event_list{$event_id}, 8) ."</td>\n";
+      }
    }
+   $marked = 0;
+   print "   </tr>\n";
+   print "   <tr>\n      <td>&nbsp;</td>\n";
+   foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
+      if ( $cur_year == $this_year && $cur_month == $this_month &&
+           substr($event_list{$event_id}, 8) >= $today && $marked == 0) {
+         print "      <td class=\"td_caption_next\" colspan=\"2\"> " .$event_time_list{$event_id} ."</td>\n";
+         $marked = 1;
+      } else {
+         print "      <td class=\"td_caption\" colspan=\"2\"> " .$event_time_list{$event_id} ."</td>\n";
+      }
    }
    print "   </tr>\n";
 
@@ -92,7 +105,7 @@ EOF
       print "   <tr>\n";
       print "      <td class=\"td_caption\">$coach_list{$coach_id}</td>\n";
       foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
-         my $schedule = get_schedule($dbh, $config{'T_SCHED'}, $config{'T_EVENT'}, $coach_id, $event_list{$event_id});
+         my $schedule = get_schedule($dbh, $config{'T_SCHED'}, $config{'T_EVENT'}, $coach_id, $event_id);
          my $state = get_state($dbh, $config{'T_EVENT'}, $event_id);
          if ($state == 1) {
             print "      <td class=\"td_omitted_1\" colspan=\"2\">f&auml;llt aus\n";
