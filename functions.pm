@@ -1,5 +1,5 @@
 ######
-# Copyright (c) 2013 Stefan Jakobs
+# Copyright (c) 2013-2016 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -34,13 +34,13 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use CGI ':standard';
 no warnings 'deprecated';
 
-$VERSION = '0.4';
+$VERSION = '0.5';
 @ISA     = qw(Exporter);
 @EXPORT  = qw( init_db close_db read_config
                get_table_list get_courses get_schedule get_state get_participants
-               get_coach_list get_event_list get_event_state get_course_list 
+               get_coach_list get_event_list get_event_state get_course_list
                get_coach_name get_course_duration get_event_time_list
-               print_start_html print_end_html print_link_list
+               print_start_html print_end_html print_link_list cmp_time
                print_formular_edit_coach
                print_debug
              );
@@ -48,7 +48,7 @@ $VERSION = '0.4';
                 get_table_list get_courses get_schedule get_state get_participants
                 get_coach_list get_event_list get_event_state get_course_list
                 get_coach_name get_course_duration get_event_time_list
-                print_start_html print_end_html print_link_list
+                print_start_html print_end_html print_link_list cmp_time
                 print_formular_edit_coach
                 print_debug
                );
@@ -89,8 +89,8 @@ sub init_db($) {
       # Create needed tables if they do not exist.
       # This must not fail, thus we don't catch errors.
       # password: TODO: use SHA2: INSERT INTO t_coach values ('max', SHA2('secret', 512));
-      $dbh->do("CREATE TABLE IF NOT EXISTS 
-                   $config{'T_COACH'} (id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+      $dbh->do("CREATE TABLE IF NOT EXISTS
+                   $config{'T_COACH'} (id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                        lastname   VARBINARY(64) NOT NULL,
                                        firstname  VARBINARY(64) NOT NULL,
                                        birthday   DATE,
@@ -101,9 +101,9 @@ sub init_db($) {
                                        license    ENUM('A', 'B', 'C', 'D'),
                                        active     BOOLEAN NOT NULL DEFAULT TRUE )"
               );
-   
-      $dbh->do("CREATE TABLE IF NOT EXISTS 
-                   $config{'T_COURSE'} (id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+
+      $dbh->do("CREATE TABLE IF NOT EXISTS
+                   $config{'T_COURSE'} (id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                         name      VARCHAR(64) NOT NULL UNIQUE KEY,
                                         number    INT NOT NULL DEFAULT 0,
                                         startdate DATE NOT NULL,
@@ -111,9 +111,9 @@ sub init_db($) {
                                         starttime TIME NOT NULL,
                                         endtime   TIME NOT NULL )"
               );
-      
-      $dbh->do("CREATE TABLE IF NOT EXISTS 
-                    $config{'T_EVENT'} (id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+
+      $dbh->do("CREATE TABLE IF NOT EXISTS
+                    $config{'T_EVENT'} (id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                         date         DATE NOT NULL,
                                         course_id    INT NOT NULL,
                                         omitted      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -121,9 +121,9 @@ sub init_db($) {
                                         FOREIGN KEY (course_id) REFERENCES $config{'T_COURSE'}(id)
                                         ON UPDATE CASCADE ON DELETE CASCADE )"
               );
-      
-      $dbh->do("CREATE TABLE IF NOT EXISTS 
-                    $config{'T_SCHED'} (id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+
+      $dbh->do("CREATE TABLE IF NOT EXISTS
+                    $config{'T_SCHED'} (id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                         coach_id  INT NOT NULL,
                                         event_id  INT NOT NULL,
                                         coaching  ENUM('A', 'B', 'C', 'F', 'P', 'X', '-') NOT NULL,
@@ -134,8 +134,8 @@ sub init_db($) {
                                         ON DELETE CASCADE )"
               );
 
-      $dbh->do("CREATE TABLE IF NOT EXISTS 
-                    $config{'T_CONFIG'} (id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+      $dbh->do("CREATE TABLE IF NOT EXISTS
+                    $config{'T_CONFIG'} (id       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                          string   VARCHAR(64) NOT NULL UNIQUE KEY,
                                          value    VARBINARY(64) NOT NULL )"
               );
@@ -152,7 +152,7 @@ sub init_db($) {
 ### close the connection to the database
 ### Requires the database handle as parameter
 sub close_db($) {
-   my $dbh = shift; 
+   my $dbh = shift;
    $dbh->disconnect();
 }
 
@@ -196,7 +196,7 @@ sub get_event_list($$$$) {
    my $t_event = shift;
    my $cur_month = shift;
    my $cur_year  = shift;
-   
+
    my $sth;
    my %event_list;
    if (! $cur_month or ! $cur_year) {
@@ -233,7 +233,7 @@ sub get_event_time_list($$$$$) {
       $sth = $dbh->prepare("SELECT event.id AS id,
                             TIME_FORMAT(${t_course}.starttime, '%k:%i') AS time FROM $t_event
                             join $t_course on ${t_event}.course_id = ${t_course}.id
-                          
+
       ");
    } else {
       $sth = $dbh->prepare("SELECT event.id AS id,
@@ -288,7 +288,7 @@ sub get_coach_list {
 
    # create a array of coaches
    my %coaches;
-   my $sth = $dbh->prepare("SELECT id, firstname, lastname FROM $t_coach 
+   my $sth = $dbh->prepare("SELECT id, firstname, lastname FROM $t_coach
                             $selector ORDER BY id");
    $sth->execute();
    while (my $ref = $sth->fetchrow_hashref()) {
@@ -322,7 +322,7 @@ sub get_course_duration($$$) {
    my $course_id = shift;
 
    my $duration = 0;
-   my $sth = $dbh->prepare("SELECT TIME_TO_SEC(SUBTIME(endtime, starttime))/3600 
+   my $sth = $dbh->prepare("SELECT TIME_TO_SEC(SUBTIME(endtime, starttime))/3600
                             AS duration FROM $t_course WHERE id = $course_id
                            ");
    $sth->execute();
@@ -341,7 +341,7 @@ sub get_coach_name($$$) {
    my $t_coach = shift;
    my $coach_id = shift;
 
-   my $sth = $dbh->prepare("SELECT firstname, lastname, license FROM $t_coach 
+   my $sth = $dbh->prepare("SELECT firstname, lastname, license FROM $t_coach
                             WHERE id = \"$coach_id\"
                            ");
    $sth->execute();
@@ -365,20 +365,20 @@ sub get_schedule($$$$$) {
    my $t_event = shift;
    my $coach_id = shift;
    my $event_id = shift;
-   
+
    my $schedule;
    my $sth = $dbh->prepare("SELECT coaching FROM $t_sched
                             WHERE coach_id = \"$coach_id\" AND event_id = \"$event_id\"
                            ");
-   
+
    $sth->execute();
    my $numRows = $sth->rows;
    my $ref = $sth->fetchrow_hashref();
    $schedule = $ref->{'coaching'} ? $ref->{'coaching'} : '';
-   
+
    $sth->finish();
    return $schedule;
-}  
+}
 
 
 ### get the omitted state from a specific event
@@ -416,6 +416,29 @@ sub get_participants($$$) {
    $state = $ref->{'participants'} // '';
 
    $sth->finish();
+   return $state;
+}
+
+### compare two times (hour:minutes). Return:
+### -1: if left/first operant is greater
+###  0: if both are equal
+###  1: if right/second operant is greater
+sub cmp_time($$) {
+   my ($l_hour, $l_min) = split(':', shift);
+   my ($r_hour, $r_min) = split(':', shift);
+   my $state = 0;
+
+   if ($l_hour > $r_hour) {
+      $state = -1;
+   } elsif ($l_hour < $r_hour) {
+      $state = 1;
+   } else {
+      if ($l_min > $r_min) {
+         $state = -1;
+      } elsif ($l_min < $r_min) {
+         $state = 1;
+      }
+   }
    return $state;
 }
 
@@ -473,7 +496,7 @@ sub print_link_list($) {
    } else {
       print "      <td class=\"header_td\"><a href=\"$config{'S_LIST_COACH'}\">Trainer anzeigen</a></td>" ."\n";
    }
-   if ($active eq $config{'S_CREATE_COACH'}) { 
+   if ($active eq $config{'S_CREATE_COACH'}) {
       print "      <td class=\"header_td_active\"><a href=\"$config{'S_CREATE_COACH'}\">Trainer anlegen</a></td>" ."\n";
    } else {
       print "      <td class=\"header_td\"><a href=\"$config{'S_CREATE_COACH'}\">Trainer anlegen</a></td>" ."\n";

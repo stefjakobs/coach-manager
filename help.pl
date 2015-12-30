@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2013-2015 Stefan Jakobs
+# Copyright (c) 2013-2016 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #

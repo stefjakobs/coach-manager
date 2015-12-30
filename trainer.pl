@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2013-2015 Stefan Jakobs
+# Copyright (c) 2013-2016 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -47,14 +47,99 @@ my %new_participants = ();
 
 my %config = read_config();
 
-## These are available via url_param() method. 
+## These are available via url_param() method.
 $cur_month = strftime "%m", localtime unless (defined $cur_month);
 $cur_year  = strftime "%Y", localtime unless (defined $cur_year);
 
 # Connect to the database.
 my $dbh = init_db(\%config);
 
+### get an array of event ids which are ordered by date and time
+sub get_sorted_events($$) {
+   my $cur_month = shift;
+   my $cur_year = shift;
 
+   my @events;
+   my %states;
+   my %schedules;
+
+   # event{id} = date
+   my %event_date_list = get_event_list($dbh, $config{'T_EVENT'}, $cur_month, $cur_year);
+   # event{id} = time
+   my %event_time_list = get_event_time_list($dbh, $config{'T_EVENT'}, $config{'T_COURSE'}, $cur_month, $cur_year);
+   my %coach_list      = get_coach_list($dbh, $config{'T_COACH'});
+
+   # sort events by date and time
+   my $cur_date = 0;
+   my $p_start  = 0;
+   my $iterator = 0;
+   foreach my $event_id (sort{$event_date_list{$a} cmp $event_date_list{$b}} keys %event_date_list) {
+      if ($event_date_list{$event_id} ne $cur_date) {
+         $cur_date = $event_date_list{$event_id};
+         $p_start = $iterator;
+
+         if ($config{'debug'}) {
+            print_debug("set new start position: $p_start and push new event</br>\n");
+         }
+
+         push(@events, $event_id);
+      } else {
+
+         if ($config{'debug'}) {
+            printf("compare %s with %s. retval=%i. id=%i, iterator=%i</br>\n",
+               $event_time_list{$event_id}, $events[$iterator - 1],
+               cmp_time($event_time_list{$event_id}, $events[$iterator - 1]),
+                $event_id, $iterator - 1);
+         }
+
+         # if new value is greater as last value, then add value to the end
+         if (cmp_time($event_time_list{$event_id}, $event_time_list{$events[$iterator - 1]}) <= 0) {
+
+            if ($config{'debug'}) {
+               printf("<p>zeit ist groesser als letzter Wert (%s > %s). Push Wert ans Ende.</p>\n",
+                  $event_time_list{$event_id}, $event_time_list{$events[$iterator - 1]});
+            }
+
+            push(@events, $event_id);
+         } else {
+            # new value is smaller than last value. Seach for right position.
+            for (my $i=$p_start; $i < @events; $i++) {
+
+               if ($config{'debug'}) {
+                  printf("--- compare %s with %s. retval=%i. id=%i, i=%i</br>\n",
+                     $event_time_list{$event_id}, $events[$i],
+                     cmp_time($event_time_list{$event_id}, $event_time_list{$events[$i]}),
+                     $event_id, $i);
+               }
+
+               # @events ist aufsteigend sortiert. Wenn Wert kleiner als aktueller
+               # Wert ist, dann vor dem akuellen Wert einfügen.
+               if (cmp_time($event_time_list{$event_id}, $event_time_list{$events[$i]}) == 1) {
+                  if ($config{'debug'}) {
+                     printf("<p>zeit ist kleiner als %d. Wert: (%s < %s). Push and Stelle %i</p>\n",
+                        $i, $event_time_list{$event_id}, $event_time_list{$events[$i]}, $i - 1);
+                  }
+                  splice(@events, $i, 0, $event_id);
+                  last;
+               }
+               # if value is greater than last value was already checked
+               # before.
+            }
+         }
+      }
+      $iterator += 1;
+      if ($config{'debug'}) {
+         printf("events:");
+         map { printf(" %s,", $event_time_list{$_}); }@events;
+         printf("</br>\n");
+      }
+   }
+   return @events;
+}
+
+
+## print the formular. The parameters are the month and the year which should
+## be shown on the page.
 sub print_formular($$) {
    my $cur_month = shift;
    my $cur_year = shift;
@@ -62,14 +147,15 @@ sub print_formular($$) {
    my %event_list      = get_event_list($dbh, $config{'T_EVENT'}, $cur_month, $cur_year);
    my %event_time_list = get_event_time_list($dbh, $config{'T_EVENT'}, $config{'T_COURSE'}, $cur_month, $cur_year);
    my %coach_list      = get_coach_list($dbh, $config{'T_COACH'});
+   my @sorted_events   = get_sorted_events($cur_month, $cur_year);
 
    ## table width: 2*events + 1 column of names
    my $colspan = 2*keys(%event_list) + 2;
    print << "EOF";
 <form name="edit_schedule" method="post">
 <table cellpadding=5>
-   <tr> 
-      <td colspan=$colspan><h3>$month2name[$cur_month - 1] $cur_year</h3></td> 
+   <tr>
+      <td colspan=$colspan><h3>$month2name[$cur_month - 1] $cur_year</h3></td>
    </tr>
    <tr>
       <td>&nbsp;</td>
@@ -78,7 +164,9 @@ EOF
    my $this_year  = strftime("%Y", localtime);
    my $today      = strftime("%d", localtime);
    my $marked = 0;
-   foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
+
+   # line: day of month:
+   foreach my $event_id (@sorted_events) {
       if ( $cur_year == $this_year && $cur_month == $this_month &&
            substr($event_list{$event_id}, 8) >= $today && $marked == 0) {
          print "      <td class=\"td_caption_next\" colspan=\"2\"> " .substr($event_list{$event_id}, 8) ."</td>\n";
@@ -90,7 +178,9 @@ EOF
    $marked = 0;
    print "   </tr>\n";
    print "   <tr>\n      <td>&nbsp;</td>\n";
-   foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
+
+   # line: event start time
+   foreach my $event_id (@sorted_events) {
       if ( $cur_year == $this_year && $cur_month == $this_month &&
            substr($event_list{$event_id}, 8) >= $today && $marked == 0) {
          print "      <td class=\"td_caption_next\" colspan=\"2\"> " .$event_time_list{$event_id} ."</td>\n";
@@ -101,10 +191,11 @@ EOF
    }
    print "   </tr>\n";
 
+   # lines: one line per coach
    foreach my $coach_id (sort{$coach_list{$a} cmp $coach_list{$b}} keys %coach_list) {
       print "   <tr>\n";
       print "      <td class=\"td_caption\">$coach_list{$coach_id}</td>\n";
-      foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
+      foreach my $event_id (@sorted_events) {
          my $schedule = get_schedule($dbh, $config{'T_SCHED'}, $config{'T_EVENT'}, $coach_id, $event_id);
          my $state = get_state($dbh, $config{'T_EVENT'}, $event_id);
          if ($state == 1) {
@@ -126,8 +217,9 @@ EOF
    }
    print "   <tr>\n";
    print "      <td class=\"td_caption_separator\">Teilnehmer</td>\n";
-   ## List must be sorted by date, otherwise the columns do not match
-   foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
+
+   # line: number of participants
+   foreach my $event_id (@sorted_events) {
       my $participants = get_participants($dbh, $config{'T_EVENT'}, $event_id);
       my $state = get_state($dbh, $config{'T_EVENT'}, $event_id);
       if ($state == 1) {
@@ -138,19 +230,21 @@ EOF
    }
    print "   </tr><tr>\n";
    print "      <td class=\"td_caption\">F&auml;llt aus</td>\n";
-   ## List must be sorted by date, otherwise the columns do not match
-   foreach my $event_id (sort{$event_list{$a} cmp $event_list{$b}} keys %event_list) {
+
+   # line: event status
+   foreach my $event_id (@sorted_events) {
       my $state = get_state($dbh, $config{'T_EVENT'}, $event_id);
       print "      <td class=\"td_omitted_${state}\" colspan=\"2\"><input type=\"checkbox\" name=\"Omitted:$event_id\" $checked[$state]></td>\n";
    }
    print "   </tr>\n";
-   ## Mache dies mit Date::Manip
+
+   ## FIXME Mache dies mit Date::Manip
    ## Beachte auch das Jahr.
    my $prev_month = $cur_month - 1;
    my $prev_year = $cur_year;
    my $next_month = $cur_month + 1;
    my $next_year = $cur_year;
-   if ($prev_month == 0) { 
+   if ($prev_month == 0) {
       $prev_month = 12;
       $prev_year = $cur_year - 1;
    }
@@ -176,7 +270,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    $cgi->header('multipart/form-data');
    print_start_html($cgi, "Traineranwesenheit");
    print_link_list($config{'S_MAIN'});
- 
+
    if ($config{'debug'}) { print_debug("POST: " . $cgi->param('submit')); };
 
    ## get the session cookie
@@ -195,10 +289,10 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
          if ( defined($cgi->url_param('year')) and $cgi->url_param('year') =~ /^\d{4}$/ ) {
             $cur_year = $cgi->url_param('year');
          }
-   
+
          ## get a list of all params
          my @all_params = $cgi->param;
-   
+
          foreach my $param (@all_params) {
             ## process only the flat list parameters
             if ( $param =~ /Sched:\d+:\d+/ ) {
@@ -210,10 +304,10 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
                $sth->execute();
                if ( $sth->rows > 1) { $error .= "Select failed: result >1; ignoring rest<br>\n"; }
                my $ref = $sth->fetchrow_hashref();
-               if ($config{'debug'}) { 
+               if ($config{'debug'}) {
                   if (defined($ref->{'coaching'})) {
-                     print_debug("coach_id=$coach_id, event_id=$event_id : db(coaching): " 
-                        .$ref->{'coaching'} ." cgi(coaching): " .$cgi->param($param)); 
+                     print_debug("coach_id=$coach_id, event_id=$event_id : db(coaching): "
+                        .$ref->{'coaching'} ." cgi(coaching): " .$cgi->param($param));
                   } else {
                      print_debug("coach_id=$coach_id, event_id=$event_id : no coaching defined!");
                   }
@@ -259,7 +353,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
                   $error .= "ERROR: coach_id=$coach_id, event_id=$event_id : Unused case!!<br>\n";
                }
             }
-   
+
             ## process omitted events
             ## only active elements will show up in the params list
             if ( $param =~ /Omitted:\d+/ ) {
@@ -267,7 +361,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
                ## store new event state in global variable for later processing
                $new_event_states{$event_id} = 1;
             }
-   
+
             ## process participants at an event
             if ( $param =~ /Participants:\d+/ ) {
                my ($sched, $event_id) = split(':', $param);
@@ -305,8 +399,8 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
       }
    } else {
       ## coookie is invalied: force a page reload and print a warning
-      # ??? 
-      $error = "Session abgelaufen! Seite wurde neugeladen ... ";
+      # FIXME reload page
+      $error = "Session abgelaufen! Seite bitte neu laden ... ";
    }
 
    print_formular($cur_month, $cur_year);
@@ -323,7 +417,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    } else {
       $error .= "Jahr darf nur aus Zahlen bestehen!<br>";
    }
-				     
+
    $cgi->header('multipart/form-data');
    print_start_html($cgi, "Traineranwesenheit");
    print_link_list($config{'S_MAIN'});
@@ -335,19 +429,4 @@ print_end_html($cgi);
 
 # Disconnect from the database.
 close_db($dbh);
-
-# INSERT some data into 'foo'. We are using $dbh->quote() for
-# quoting the name.
-#$dbh->do("INSERT INTO foo VALUES (1, " . $dbh->quote("Tim") . ")");
-
-# Same thing, but using placeholders
-#$dbh->do("INSERT INTO foo VALUES (?, ?)", undef, 2, "Jochen");
-
-# Now retrieve data from the table.
-#my $sth = $dbh->prepare("SELECT * FROM foo");
-#$sth->execute();
-#while (my $ref = $sth->fetchrow_hashref()) {
-#   print "Found a row: id = $ref->{'id'}, name = $ref->{'name'}\n";
-#}
-#$sth->finish();
 

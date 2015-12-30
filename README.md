@@ -38,6 +38,25 @@ mysql> show tables;
 | schedule          |
 +-------------------+
 
+mysql> describe coachlist;
++------------+-----------------------+------+-----+---------+----------------+
+| Field      | Type                  | Null | Key | Default | Extra          |
++------------+-----------------------+------+-----+---------+----------------+
+| id         | int(11)               | NO   | PRI | NULL    | auto_increment |
+| lastname   | varbinary(64)         | NO   |     | NULL    |                |
+| firstname  | varbinary(64)         | NO   |     | NULL    |                |
+| birthday   | date                  | YES  |     | NULL    |                |
+| email      | varbinary(256)        | YES  |     | NULL    |                |
+| telephone  | varchar(20)           | YES  |     | NULL    |                |
+| password   | varchar(64)           | YES  |     | NULL    |                |
+| priviledge | tinyint(4)            | NO   |     | 0       |                |
+| license    | enum('A','B','C','D') | YES  |     | NULL    |                |
+| active     | tinyint(1)            | NO   |     | 1       |                |
++------------+-----------------------+------+-----+---------+----------------+
+
+Die Tabelle coachlist enthält die Angaben zu den Personen. Der Zugriff auf
+eine Person erfolgt immer über die die ID.
+
 mysql> describe config;
 +--------+---------------+------+-----+---------+----------------+
 | Field  | Type          | Null | Key | Default | Extra          |
@@ -58,6 +77,7 @@ mysql> describe course;
 +-----------+-------------+------+-----+---------+----------------+
 | id        | int(11)     | NO   | PRI | NULL    | auto_increment |
 | name      | varchar(64) | NO   | UNI | NULL    |                |
+| number    | int(11)     | NO   |     | 0       |                |
 | startdate | date        | NO   |     | NULL    |                |
 | enddate   | date        | NO   |     | NULL    |                |
 | starttime | time        | NO   |     | NULL    |                |
@@ -102,6 +122,7 @@ Perl-CGI-Skripte
 Es werden die folgenden Module benötigt:
   * CGI
   * DBI
+  * DBD::mysql
   * Date::Manip
 
 Es wird durchgehend UTF-8 verwendet.
@@ -128,7 +149,7 @@ die Funktion zum Einlesen der Konfigurationsdatei zur Verfügung, sowie die
 Funktion 'init_db' zum Zugriff auf die Datenbank.
 
 ###################################################################
-# Copyright (c) 2013 Stefan Jakobs
+# Copyright (c) 2013-2015 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
