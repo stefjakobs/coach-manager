@@ -55,6 +55,7 @@ sub print_formular() {
    <p> </p>
    <p><a href="Protokoll_Versammlung_2014.pdf">Protokoll Versammlung 2014 (PDF)</a></p>
    <p><a href="Versicherungsschein.pdf">Versicherungsschein (PDF)</a></p>
+   <p><a href="wie_soll_ich_mich_verhalten.pdf">Wie soll ich mich als Trainer verhalten (PDF)</a></p>
 EOF
 }
 

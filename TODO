@@ -1,0 +1,6 @@
+* Löschen eines Kurses löscht weder
+  - die events, noch
+  - die schedule Einträge.
+  Fix with:
+    DELETE FROM event WHERE course_id = '12';
+    DELETE FROM schedule WHERE EXISTS (SELECT * FROM event where event.id =schedule.event_id and event.course_id = '12');
