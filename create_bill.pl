@@ -153,7 +153,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
       print_formular();
       print "<p class=\"error\">$error</p>";
    } else {
-      print $cgi->redirect($config{'S_LIST_BILL'} ."/?coach_id=" .$coach_id
+      print $cgi->redirect($config{'S_LIST_BILL'} ."?coach_id=" .$coach_id
                                                  . "&street=" .$street
                                                  . "&zipcode=" .$zipcode
                                                  . "&city=" .$city
