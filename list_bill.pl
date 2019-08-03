@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2013-2016 Stefan Jakobs
+# Copyright (c) 2013-2019 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -268,7 +268,7 @@ sub untaint_input() {
    }
 }
 
-print_start_html($cgi, 'Abrechnung', '../print.css');
+print_start_html($cgi, 'Abrechnung', './print.css');
 untaint_input();
 
 # get coach details

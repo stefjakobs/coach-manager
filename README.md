@@ -149,7 +149,7 @@ die Funktion zum Einlesen der Konfigurationsdatei zur Verfügung, sowie die
 Funktion 'init_db' zum Zugriff auf die Datenbank.
 
 ###################################################################
-# Copyright (c) 2013-2015 Stefan Jakobs
+# Copyright (c) 2013-2019 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #

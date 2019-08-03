@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2013-2016 Stefan Jakobs
+# Copyright (c) 2013-2019 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -56,7 +56,7 @@ EOF
    print "      <th>l&ouml;schen</th>\n";
    print "      <th>bearbeiten</th>\n";
    print "   </tr>\n";
-   foreach my $id (sort {$a cmp $b} keys %courses) {
+   foreach my $id (sort {$a <=> $b} keys %courses) {
       print "   <tr>\n";
       foreach my $item (@course_keys) {
          print "      <td class=\"td_content\">$courses{$id}{$item}</td>" ."\n";
@@ -71,8 +71,8 @@ EOF
    <p class="attention">
    ACHTUNG: Das L&ouml;schen eines Kurses l&ouml;scht gleichzeitig alle
       dazugeh&ouml;rigen Trainingstage!! </p>
-   <input class="input_form_simple" type="checkbox" name="confirmed">
-   <p>Ich bin mir sicher, dass ich den ausgew&auml;hlten Kurs l&ouml;schen m&ouml;chte.</p>
+   <p><input class="input_form_simple" type="checkbox" name="confirmed">
+   Ich bin mir sicher, dass ich den ausgew&auml;hlten Kurs l&ouml;schen m&ouml;chte.</p>
    </form>
 EOF
 }
@@ -84,8 +84,8 @@ my $cgi = CGI->new;
 
 if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    print_start_html($cgi, 'Kurse anzeigen');
+   # get course list and try to delete the requested course
    %courses = get_table_list($dbh, $config{T_COURSE});
-   list_courses();
    foreach my $id (keys %courses) {
       if ( defined($cgi->param('confirmed')) and defined($cgi->param("submit:$id")) ) {
          eval { $dbh->do("DELETE FROM $config{'T_COURSE'} WHERE id = " . $id ) };
@@ -98,6 +98,11 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
          print "<p class=\"notice\"> Nichts gel&ouml;scht: Vergessen zu best&auml;tigen?</p>";
       }
    }
+   # update course list after delete was successul (one course less)
+   if($success) {
+      %courses = get_table_list($dbh, $config{T_COURSE});
+   }
+   list_courses();
    if ($error) { print "<p class=\"error\">$error</p>\n"; }
    if ($success) { print "<p class=\"notice\">$success</p>\n"; }
 } else {

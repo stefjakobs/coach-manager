@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2013-2016 Stefan Jakobs
+# Copyright (c) 2013-2019 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -70,8 +70,8 @@ EOF
    print <<"EOF"; 
    <p class="attention">
    ACHTUNG: Das L&ouml;schen eines Trainers l&ouml;scht gleichzeitig dessen Abrechnungsdaten! </p>
-   <input class="input_form_simple" type="checkbox" name="confirmed">
-      <p>Ich bin mir sicher, dass ich den ausgew&auml;hlten Trainer l&ouml;schen m&ouml;chte.</p>
+   <p><input class="input_form_simple" type="checkbox" name="confirmed">
+      Ich bin mir sicher, dass ich den ausgew&auml;hlten Trainer l&ouml;schen m&ouml;chte.</p>
    </form>
 EOF
 }
@@ -85,7 +85,6 @@ my $cgi = CGI->new;
 if (defined($ENV{'REQUEST_METHOD'}) and $ENV{'REQUEST_METHOD'} eq "POST") {
    print_start_html($cgi, 'Trainer anzeigen');
    %coaches = get_table_list($dbh, $config{T_COACH});
-   list_coaches();
    
    foreach my $id (keys %coaches) {
       if ( defined($cgi->param('confirmed')) and defined($cgi->param("delete:$id")) ) {
@@ -93,11 +92,15 @@ if (defined($ENV{'REQUEST_METHOD'}) and $ENV{'REQUEST_METHOD'} eq "POST") {
          if ($@) {
             $error .= "Failed to delete coach $id:<br>\n $@ \n";
          } else {
-            $success .= "Trainer $id erfolgreich entfernt.";
+            $success .= "Trainer $coaches{$id}{'firstname'} ($id) erfolgreich entfernt.";
          }
       } elsif ( defined($cgi->param("delete:$id")) ) {
          print "<p class=\"notice\"> Nichts gel&ouml;scht: Vergessen zu best&auml;tigen?</p>";
       }
+   }
+   # update coach list after successful removal (one coach less)
+   if ($success) {
+      list_coaches();
    }
    if ($error) { print "<p class=\"error\">$error</p>\n"; }
    if ($success) { print "<p class=\"notice\">$success</p>\n"; }

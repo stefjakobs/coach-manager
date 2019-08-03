@@ -1,5 +1,5 @@
 ######
-# Copyright (c) 2013-2016 Stefan Jakobs
+# Copyright (c) 2013-2019 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -38,7 +38,7 @@ $VERSION = '0.5';
 @ISA     = qw(Exporter);
 @EXPORT  = qw( init_db close_db read_config
                get_table_list get_courses get_schedule get_state get_participants
-               get_coach_list get_event_list get_event_state get_course_list
+               get_coach_list get_event_list get_event_state get_course_list get_active_course_list
                get_coach_name get_course_duration get_event_time_list
                print_start_html print_end_html print_link_list cmp_time
                print_formular_edit_coach
@@ -46,7 +46,7 @@ $VERSION = '0.5';
              );
 @EXPORT_OK = qw(init_db close_db read_config
                 get_table_list get_courses get_schedule get_state get_participants
-                get_coach_list get_event_list get_event_state get_course_list
+                get_coach_list get_event_list get_event_state get_course_list get_active_course_list
                 get_coach_name get_course_duration get_event_time_list
                 print_start_html print_end_html print_link_list cmp_time
                 print_formular_edit_coach
@@ -99,7 +99,8 @@ sub init_db($) {
                                        password   VARCHAR(64),
                                        priviledge TINYINT NOT NULL DEFAULT 0,
                                        license    ENUM('A', 'B', 'C', 'D'),
-                                       active     BOOLEAN NOT NULL DEFAULT TRUE )"
+                                       active     BOOLEAN NOT NULL DEFAULT TRUE )
+                    ENGINE=InnoDB"
               );
 
       $dbh->do("CREATE TABLE IF NOT EXISTS
@@ -109,7 +110,8 @@ sub init_db($) {
                                         startdate DATE NOT NULL,
                                         enddate   DATE NOT NULL,
                                         starttime TIME NOT NULL,
-                                        endtime   TIME NOT NULL )"
+                                        endtime   TIME NOT NULL )
+                    ENGINE=InnoDB"
               );
 
       $dbh->do("CREATE TABLE IF NOT EXISTS
@@ -119,7 +121,8 @@ sub init_db($) {
                                         omitted      BOOLEAN NOT NULL DEFAULT FALSE,
                                         participants TINYINT DEFAULT NULL,
                                         FOREIGN KEY (course_id) REFERENCES $config{'T_COURSE'}(id)
-                                        ON UPDATE CASCADE ON DELETE CASCADE )"
+                                        ON UPDATE CASCADE ON DELETE CASCADE )
+                    ENGINE=InnoDB"
               );
 
       $dbh->do("CREATE TABLE IF NOT EXISTS
@@ -131,7 +134,8 @@ sub init_db($) {
                                         FOREIGN KEY (coach_id) REFERENCES $config{'T_COACH'}(id)
                                         ON DELETE CASCADE,
                                         FOREIGN KEY (event_id) REFERENCES $config{'T_EVENT'}(id)
-                                        ON DELETE CASCADE )"
+                                        ON DELETE CASCADE )
+                    ENGINE=InnoDB"
               );
 
       $dbh->do("CREATE TABLE IF NOT EXISTS
@@ -306,6 +310,22 @@ sub get_course_list($$) {
 
    my %courses;
    my $sth = $dbh->prepare("SELECT id, name FROM $t_course ORDER BY name");
+   $sth->execute();
+   while (my $ref = $sth->fetchrow_hashref()) {
+      $courses{$ref->{'id'}} = "$ref->{'name'}";
+   }
+   return %courses;
+}
+
+### get a list of all active running courses
+### Requires: database handle, course table name
+### Returns: a hash with the ids as keys and the course names as values
+sub get_active_course_list($$) {
+   my $dbh = shift;
+   my $t_course = shift;
+
+   my %courses;
+   my $sth = $dbh->prepare("SELECT id, name FROM $t_course where startdate < CURDATE() AND enddate > CURDATE() ORDER BY name");
    $sth->execute();
    while (my $ref = $sth->fetchrow_hashref()) {
       $courses{$ref->{'id'}} = "$ref->{'name'}";

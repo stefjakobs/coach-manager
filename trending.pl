@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 ######
-# Copyright (c) 2015-2016 Stefan Jakobs
+# Copyright (c) 2015-2019 Stefan Jakobs
 #
 # This file is part of coach-manager.
 #
@@ -39,6 +39,7 @@ my $error;
 my $object;
 my @course_ids;
 my %course_list;
+my %active_course_list;
 my %courses_checked;
 my $cgi = CGI->new;
 
@@ -58,7 +59,11 @@ sub print_formular($) {
 EOF
 
    foreach (sort {$course_list{$a} cmp $course_list{$b}} keys %course_list) {
-      if ($get eq 'get') { $courses_checked{$_}='checked'; }
+      if ($get eq 'get') {
+         if (defined($active_course_list{$_})) {
+            $courses_checked{$_}='checked';
+         }
+      }
       if (defined($courses_checked{$_})) {
          print "         <input type=\"checkbox\" name=\"course_id\" value=\"$_\" $courses_checked{$_} > $course_list{$_} </br>\n";
       } else {
@@ -107,6 +112,9 @@ sub untaint_input() {
 
 ## Get all course names
 %course_list = get_course_list($dbh, $config{'T_COURSE'});
+
+## Get all active course names
+%active_course_list = get_active_course_list($dbh, $config{'T_COURSE'});
 
 
 # Read in text
