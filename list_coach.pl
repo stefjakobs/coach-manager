@@ -100,8 +100,9 @@ if (defined($ENV{'REQUEST_METHOD'}) and $ENV{'REQUEST_METHOD'} eq "POST") {
    }
    # update coach list after successful removal (one coach less)
    if ($success) {
-      list_coaches();
+      %coaches = get_table_list($dbh, $config{T_COACH});
    }
+   list_coaches();
    if ($error) { print "<p class=\"error\">$error</p>\n"; }
    if ($success) { print "<p class=\"notice\">$success</p>\n"; }
 } else {
