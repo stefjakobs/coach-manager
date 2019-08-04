@@ -170,7 +170,7 @@ sub print_debug($) {
 
 ### print a list of all items in a table
 ### Requires the database handle and the table name as parameters
-### returns a hash with the names as keys and an other hash as values
+### returns a hash with the id and column names as keys and the name's value as value
 sub get_table_list($$) {
    my $dbh = shift;
    my $table = shift;
@@ -465,22 +465,33 @@ sub cmp_time($$) {
 ### DO THE HTML STUFF ###
 
 ### print the HTML header of a site
+### Expects: cgi object, Title, style css file, schedule hash
 sub print_start_html {
    my $cgi = shift;
    my $title = shift;
    my $style = shift;
+   my $sched_hash = shift;
    if ( ! defined($style)) { $style = 'style.css'; }
 
-   my $cookie = cookie( -name    =>'sessionID',
-                        -value   =>'trainer',
-                        -expires =>'+10m',
-                        -path    =>'/',
-                      );
-   print $cgi->header(-cookie => $cookie);
+   my $session_cookie = cookie( -name    => 'sessionID',
+                                -value   => 'trainer',
+                                -expires => '+10m',
+                                -path    => '/',
+                              );
+   if (defined($sched_hash)) {
+      my $schedule_cookie = cookie( -name    => 'schedule_hash',
+                                    -value   => $sched_hash,
+                                    -expires => '+10m',
+                                    -path    => '/',
+                                  );
+      print $cgi->header(-cookie => [$session_cookie, $schedule_cookie]);
+   } else {
+      print $cgi->header(-cookie => $session_cookie);
+   }
    print $cgi->start_html(
            -title    => "$title",
            -author   => 'stefan@localside.net',
-           -meta     => {'keywords'=>'create Coach', 'copyright'=>'copyright Stefan Jakobs (2013)'},
+           -meta     => {'keywords'=>'create Coach', 'copyright'=>'copyright Stefan Jakobs (2013-2019)'},
            -style    => {'src'=>$style},
            -encoding => 'UTF-8',
            #-BGCOLOR  => 'lightyellow',

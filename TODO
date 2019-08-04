@@ -1,2 +1,5 @@
 * list_coach.pl: add option to list past training events
 * other billing mechanism
+* print_debug: collect debug messages in a variable and print it at the end.
+  debug messages which are printed before start html header is printed get
+  lost right now

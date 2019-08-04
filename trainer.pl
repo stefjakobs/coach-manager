@@ -32,6 +32,7 @@ no warnings 'deprecated';
 use DBI;
 use CGI;
 use POSIX qw(strftime);
+use Digest::SHA qw(sha256_base64);
 use lib '.';
 use functions;
 
@@ -116,7 +117,7 @@ sub get_sorted_events($$) {
                # Wert ist, dann vor dem akuellen Wert einfügen.
                if (cmp_time($event_time_list{$event_id}, $event_time_list{$events[$i]}) == 1) {
                   if ($config{'debug'}) {
-                     printf("<p>zeit ist kleiner als %d. Wert: (%s < %s). Push and Stelle %i</p>\n",
+                     printf("<p>zeit ist kleiner als %d. Wert: (%s < %s). Push an Stelle %i</p>\n",
                         $i, $event_time_list{$event_id}, $event_time_list{$events[$i]}, $i - 1);
                   }
                   splice(@events, $i, 0, $event_id);
@@ -137,6 +138,29 @@ sub get_sorted_events($$) {
    return @events;
 }
 
+## iterate over the actual schedule, concate each's coaches state of each
+## event and calculate the sha2 sum of the final string.
+## Returns: the sha2 sum of the schedule.
+sub create_schedule_hash($$) {
+   my $cur_month = shift;
+   my $cur_year = shift;
+
+   my @sorted_events   = get_sorted_events($cur_month, $cur_year);
+   my %coach_list      = get_coach_list($dbh, $config{'T_COACH'});
+   my $schedule_string = '';
+
+   foreach my $event_id (@sorted_events) {
+      foreach my $coach_id (sort{$coach_list{$a} cmp $coach_list{$b}} keys %coach_list) {
+         my $schedule = get_schedule($dbh, $config{'T_SCHED'}, $config{'T_EVENT'}, $coach_id, $event_id);
+         $schedule_string = $schedule_string . $schedule;
+      }
+      my $participants = get_participants($dbh, $config{'T_EVENT'}, $event_id);
+      my $state = get_state($dbh, $config{'T_EVENT'}, $event_id);
+      $schedule_string = $schedule_string . $participants . $state
+   }
+
+   return sha256_base64($schedule_string);
+}
 
 ## print the formular. The parameters are the month and the year which should
 ## be shown on the page.
@@ -267,29 +291,35 @@ EOF
 
 ### MAIN ###
 if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
-   $cgi->header('multipart/form-data');
-   print_start_html($cgi, "Traineranwesenheit");
-   print_link_list($config{'S_MAIN'});
-
-   if ($config{'debug'}) { print_debug("POST: " . $cgi->param('submit')); };
+   ## get and untaint current month and year
+   if ( defined($cgi->url_param('month')) and $cgi->url_param('month') =~ /^\d{1,2}$/ ) {
+      $cur_month = $cgi->url_param('month');
+   }
+   if ( defined($cgi->url_param('year')) and $cgi->url_param('year') =~ /^\d{4}$/ ) {
+      $cur_year = $cgi->url_param('year');
+   }
+   ## recalculate the schedule hash - will comapred against the hash in the cookie
+   my $schedule_hash_recalculated = create_schedule_hash($cur_month, $cur_year);
 
    ## get the session cookie
    my $query = CGI->new;
    my $sessionID = $query->cookie('sessionID');
+   my $schedule_hash = $query->cookie('schedule_hash');
 
-   ## check if the session cookie is valid
-   if ( defined($sessionID) and $sessionID eq 'trainer' ) {
+   ## check if the session cookie and schedule_hash is valid
+   if ( not (defined($sessionID) and $sessionID eq 'trainer') ) {
+      ## coookie is invalied: force a page reload and print a warning
+      # FIXME reload page
+      $error = "Session abgelaufen! Seite bitte neu laden ... ";
+   } elsif ( not (defined($schedule_hash) and $schedule_hash eq $schedule_hash_recalculated ) ) {
+      ## coookie is invalied: force a page reload and print a warning
+      # FIXME reload page
+      $error = "Seiteninhalt wurde ge&auml;ndert! Seite bitte neu laden ... ";
+
+   } else {
 
       ## check if submit botton was pressed
       if ( $cgi->param('submit') and (! defined($error)) ) {
-         ## get and untaint current month and year
-         if ( defined($cgi->url_param('month')) and $cgi->url_param('month') =~ /^\d{1,2}$/ ) {
-            $cur_month = $cgi->url_param('month');
-         }
-         if ( defined($cgi->url_param('year')) and $cgi->url_param('year') =~ /^\d{4}$/ ) {
-            $cur_year = $cgi->url_param('year');
-         }
-
          ## get a list of all params
          my @all_params = $cgi->param;
 
@@ -397,11 +427,17 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
             }
          }
       }
-   } else {
-      ## coookie is invalied: force a page reload and print a warning
-      # FIXME reload page
-      $error = "Session abgelaufen! Seite bitte neu laden ... ";
    }
+
+   $cgi->header('multipart/form-data');
+   print_start_html($cgi, "Traineranwesenheit", 'style.css', create_schedule_hash($cur_month, $cur_year));
+   print_link_list($config{'S_MAIN'});
+
+   if ($config{'debug'}) {
+      print_debug("POST: " . $cgi->param('submit'));
+      print_debug("cookie hash: " . $schedule_hash);
+      print_debug("new    hash: " . $schedule_hash_recalculated);
+   };
 
    print_formular($cur_month, $cur_year);
    print "<p class=\"error\"> $error </p>\n" if $error;
@@ -419,7 +455,7 @@ if (defined($ENV{'REQUEST_METHOD'}) and uc($ENV{'REQUEST_METHOD'}) eq "POST") {
    }
 
    $cgi->header('multipart/form-data');
-   print_start_html($cgi, "Traineranwesenheit");
+   print_start_html($cgi, "Traineranwesenheit", 'style.css', create_schedule_hash($cur_month, $cur_year));
    print_link_list($config{'S_MAIN'});
    print_formular($cur_month, $cur_year);
    if($config{'debug'}) { print_debug("GET"); };

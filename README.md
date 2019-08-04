@@ -124,6 +124,7 @@ Es werden die folgenden Module benötigt:
   * DBI
   * DBD::mysql
   * Date::Manip
+  * Digest::SHA
 
 Es wird durchgehend UTF-8 verwendet.
 
@@ -147,6 +148,24 @@ Wo möglich wurden Funktionalitäten in Funktionen ausgegliedert, die über das
 Paket 'functions' zur Verfügung gestellt werden. Dies Paket stellt vor allem
 die Funktion zum Einlesen der Konfigurationsdatei zur Verfügung, sowie die 
 Funktion 'init_db' zum Zugriff auf die Datenbank.
+
+Cookies
+-------
+
+Die Anwendung setzt zwei Cookies:
+
+  * SessionID
+  * schedule_hash
+
+SessionID enthält ein geteiltes (nicht so geheimes) Geheimnis mit einer
+Gültigkeitsdauer von 10 Minuten. Dies bewirkt, dass Änderungen nur
+durchgeführt werden können, solange der Cookie gültig ist.
+
+schedule_hash enthält den Inhalt der Tabelle auf der Hauptseite (trainer.pl)
+als SHA256 kodierten String. Bevor Änderungen an der Hauptseite passieren,
+wird geprüft, ob der String noch aktuell ist. Dadurch wird verhindert, dass
+eine Seite geschrieben wurde, obwohl während dessen schon andere Änderungen
+passiert sind.
 
 ###################################################################
 # Copyright (c) 2013-2019 Stefan Jakobs
