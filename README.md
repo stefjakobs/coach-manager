@@ -1,13 +1,12 @@
-coach-manager
-=============
+# coach-manager
 
 Perl Webapplication - Manages the time table for different courses and coaches.
 
-Datenbankanbindung
-------------------
+## Datenbankanbindung
 
 Diese Webanwendung verwendet folgendes Datenbanklayout:
 
+```
 +----------+
 |  config  |
 | -------- |
@@ -19,6 +18,7 @@ Diese Webanwendung verwendet folgendes Datenbanklayout:
 +---------+ 1    * +-------+ *   1 +----------+ 1   * +-----------+
 | course  | -----> | event | <---- | schedule | ----> | coachlist |
 + --------+        +-------+       +----------+       +-----------+
+```
 
 Die Basis für alles sind Kurse. Ein Kurs besteht aus mehreren Trainingstagen,
 hier events genannt. Einem Traingstag können mehrere Trainer zugeordnet sein.
@@ -27,6 +27,7 @@ Diese n:m Zuordnung wird über die zusätzliche Tabelle schedule realisiert.
 
 Nachfolgend die Auszüge über die Einrichtung der Datenbank:
 
+```
 mysql> show tables;
 +-------------------+
 | Tables_in_trainer |
@@ -53,10 +54,12 @@ mysql> describe coachlist;
 | license    | enum('A','B','C','D') | YES  |     | NULL    |                |
 | active     | tinyint(1)            | NO   |     | 1       |                |
 +------------+-----------------------+------+-----+---------+----------------+
+```
 
 Die Tabelle coachlist enthält die Angaben zu den Personen. Der Zugriff auf
 eine Person erfolgt immer über die die ID.
 
+```
 mysql> describe config;
 +--------+---------------+------+-----+---------+----------------+
 | Field  | Type          | Null | Key | Default | Extra          |
@@ -65,12 +68,14 @@ mysql> describe config;
 | string | varchar(64)   | NO   | UNI | NULL    |                |
 | value  | varbinary(64) | NO   |     | NULL    |                |
 +--------+---------------+------+-----+---------+----------------+
+```
 
 Die Tabelle config dient zur Versionsverwaltung des Datenbankschemas. Dort
 wird der String 'version' mit der aktuellen Versionsnummer als value
 gespeichert. Bei einem Update des Schemas kann der aktuelle Wert ausgelesen
 werden und daraus die nötigen Änderungen ermittelt werden.
 
+```
 mysql> describe course;
 +-----------+-------------+------+-----+---------+----------------+
 | Field     | Type        | Null | Key | Default | Extra          |
@@ -83,9 +88,11 @@ mysql> describe course;
 | starttime | time        | NO   |     | NULL    |                |
 | endtime   | time        | NO   |     | NULL    |                |
 +-----------+-------------+------+-----+---------+----------------+
+```
 
 Die Kurse liegen in der Tabelle course. Das Feld 'name' muss eindeutig sein.
 
+```
 mysql> describe event;
 +--------------+------------+------+-----+---------+----------------+
 | Field        | Type       | Null | Key | Default | Extra          |
@@ -96,12 +103,14 @@ mysql> describe event;
 | omitted      | tinyint(1) | NO   |     | 0       |                |
 | participants | tinyint(4) | YES  |     | NULL    |                |
 +--------------+------------+------+-----+---------+----------------+
+```
 
 Aus den Daten eines Kurses werden automatisch die Events erzeutgt, welche
 in der Tabelle 'event' abgelegt werden. Ein Event ist über die 'course_id'
 genau einem Kurs zugeordnet. 'omitted' gibt an, ob der Kurs ausfällt.
 'participants' gibt die Anzahl der Teilnehmer an.
 
+```
 mysql> describe schedule;
 +----------+-----------------------------------+------+-----+---------+----------------+
 | Field    | Type                              | Null | Key | Default | Extra          |
@@ -111,13 +120,13 @@ mysql> describe schedule;
 | event_id | int(11)                           | NO   | MUL | NULL    |                |
 | coaching | enum('A','B','C','F','P','X','-') | NO   |     | NULL    |                |
 +----------+-----------------------------------+------+-----+---------+----------------+
+```
 
-Die Tabelle schedule ermöglicht die n:m Zuordnung zwischen Trainern und Events. Ein Eintrag
-verbindet einen Trainer mit einem Event. Das Feld 'coaching' bezeichnet die Funktion des
-Trainers.
+Die Tabelle schedule ermöglicht die n:m Zuordnung zwischen Trainern und Events.
+Ein Eintrag verbindet einen Trainer mit einem Event. Das Feld 'coaching'
+bezeichnet die Funktion des Trainers.
 
-Perl-CGI-Skripte
-----------------
+## Perl-CGI-Skripte
 
 Es werden die folgenden Module benötigt:
   * CGI
@@ -149,8 +158,7 @@ Paket 'functions' zur Verfügung gestellt werden. Dies Paket stellt vor allem
 die Funktion zum Einlesen der Konfigurationsdatei zur Verfügung, sowie die 
 Funktion 'init_db' zum Zugriff auf die Datenbank.
 
-Cookies
--------
+## Cookies
 
 Die Anwendung setzt zwei Cookies:
 
@@ -167,6 +175,7 @@ wird geprüft, ob der String noch aktuell ist. Dadurch wird verhindert, dass
 eine Seite geschrieben wurde, obwohl während dessen schon andere Änderungen
 passiert sind.
 
+```
 ###################################################################
 # Copyright (c) 2013-2019 Stefan Jakobs
 #
@@ -193,3 +202,4 @@ passiert sind.
 #       to projects@localside.net
 #
 ###################################################################
+```
